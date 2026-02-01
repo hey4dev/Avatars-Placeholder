@@ -1,20 +1,21 @@
-# نسخه سبک نود
-FROM node:20-alpine
+FROM node:20-slim
 
-# دایرکتوری داخل کانتینر
 WORKDIR /app
 
-# فقط فایل‌های dependency رو اول کپی می‌کنیم برای cache بهتر
+RUN apt-get update && apt-get install -y \
+    python3 \
+    build-essential \
+    libcairo2-dev \
+    libpango1.0-dev \
+    libjpeg-dev \
+    libgif-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY back-end/package*.json ./
+RUN npm install --omit=dev
 
-# نصب dependency ها
-RUN npm install --production
-
-# بقیه سورس کد
 COPY back-end .
 
-# پورت اپ (بسته به پروژه‌ات ممکنه فرق کنه)
 EXPOSE 3000
 
-# اجرای برنامه
-CMD ["npm", "start"]
+CMD ["node", "server"]

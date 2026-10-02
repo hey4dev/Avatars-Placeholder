@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const svg2img = require('svg2img');
+const composite_1 = require("../../../rings/composite");
+const catalog_1 = require("../../../soccer/catalog");
 class publicController {
     constructor() {
         this.publicNameAvatar = process.env.AVATAR_PUBLIC_NAME ? process.env.AVATAR_PUBLIC_NAME : "";
@@ -28,15 +29,29 @@ class publicController {
             const path = `${process.env.UPLOAD_DIR}/${folderName}/${imageName}`;
             return path;
         };
-        this.index = (req, res, next) => {
+        this.sendAvatar = async (res, filePath, ringQuery) => {
+            const ring = (0, composite_1.resolveRing)(ringQuery);
+            if (!ring) {
+                res.status(200).sendFile(filePath, { root: '.' });
+                return;
+            }
+            try {
+                const buffer = await (0, composite_1.applyRingToFile)(filePath, ring);
+                res.set('Content-Type', 'image/png');
+                res.status(200).send(buffer);
+            }
+            catch (err) {
+                console.error("Ring composite failed:", err);
+                res.status(200).sendFile(filePath, { root: '.' });
+            }
+        };
+        this.index = async (req, res, next) => {
             var _a, _b;
             try {
                 const startIndex = process.env.IMG_START_INDEX ? parseInt(process.env.IMG_START_INDEX) : 0;
                 const endIndex = process.env.IMG_END_INDEX ? parseInt(process.env.IMG_END_INDEX) : 0;
                 if (!startIndex || !endIndex || (startIndex > endIndex)) {
-                    res.
-                        status(200).
-                        sendFile(this.get404Avatar(), { root: '.' });
+                    await this.sendAvatar(res, this.get404Avatar(), req.query.ring);
                     return;
                 }
                 let path = null;
@@ -49,52 +64,37 @@ class publicController {
                     }
                     path = this.getImagePath("id", startIndex, endIndex);
                 }
-                //console.log(path)
                 if (path) {
-                    res.
-                        status(200).
-                        sendFile(path, { root: '.' });
+                    await this.sendAvatar(res, path, req.query.ring);
                 }
             }
             catch (err) {
-                res.
-                    status(200).
-                    sendFile(this.get404Avatar(), { root: '.' });
+                await this.sendAvatar(res, this.get404Avatar(), req.query.ring);
             }
         };
-        this.byId = (req, res, next) => {
+        this.byId = async (req, res, next) => {
             const idAvatar = parseInt(req.params.id);
             const startIndex = process.env.IMG_START_INDEX ? parseInt(process.env.IMG_START_INDEX) : 0;
             const endIndex = process.env.IMG_END_INDEX ? parseInt(process.env.IMG_END_INDEX) : 0;
             if (!startIndex || !endIndex || !idAvatar || (startIndex > endIndex)) {
-                res.
-                    status(200).
-                    sendFile(this.get404Avatar(), { root: '.' });
+                await this.sendAvatar(res, this.get404Avatar(), req.query.ring);
                 return;
             }
             if ((startIndex > idAvatar) || (idAvatar > endIndex)) {
-                //console.log(this)
-                res.
-                    status(200).
-                    sendFile(this.get404Avatar(), { root: '.' });
+                await this.sendAvatar(res, this.get404Avatar(), req.query.ring);
                 return;
             }
             const imageName = this.publicNameAvatar + idAvatar + this.foramtFile;
             const path = `${process.env.UPLOAD_DIR}/id/${imageName}`;
-            //console.log(path)
             if (path) {
-                res.
-                    status(200).
-                    sendFile(path, { root: '.' });
+                await this.sendAvatar(res, path, req.query.ring);
             }
         };
-        this.byGenderBoy = (req, res, next) => {
+        this.byGenderBoy = async (req, res, next) => {
             const startIndex = process.env.IMG_BOY_START_INDEX ? parseInt(process.env.IMG_BOY_START_INDEX) : 0;
             const endIndex = process.env.IMG_BOY_END_INDEX ? parseInt(process.env.IMG_BOY_END_INDEX) : 0;
             if (!startIndex || !endIndex || (startIndex > endIndex)) {
-                res.
-                    status(200).
-                    sendFile(this.get404Avatar(), { root: '.' });
+                await this.sendAvatar(res, this.get404Avatar(), req.query.ring);
                 return;
             }
             let path = null;
@@ -104,20 +104,15 @@ class publicController {
             else {
                 path = this.getImagePath("boy", startIndex, endIndex);
             }
-            //console.log(path)
             if (path) {
-                res.
-                    status(200).
-                    sendFile(path, { root: '.' });
+                await this.sendAvatar(res, path, req.query.ring);
             }
         };
-        this.byGenderGirl = (req, res, next) => {
+        this.byGenderGirl = async (req, res, next) => {
             const startIndex = process.env.IMG_GIRL_START_INDEX ? parseInt(process.env.IMG_GIRL_START_INDEX) : 0;
             const endIndex = process.env.IMG_GIRL_END_INDEX ? parseInt(process.env.IMG_GIRL_END_INDEX) : 0;
             if (!startIndex || !endIndex || (startIndex > endIndex)) {
-                res.
-                    status(200).
-                    sendFile(this.get404Avatar(), { root: '.' });
+                await this.sendAvatar(res, this.get404Avatar(), req.query.ring);
                 return;
             }
             let path = null;
@@ -127,28 +122,49 @@ class publicController {
             else {
                 path = this.getImagePath("girl", startIndex, endIndex);
             }
-            //console.log(path)
             if (path) {
-                res.
-                    status(200).
-                    sendFile(path, { root: '.' });
+                await this.sendAvatar(res, path, req.query.ring);
+            }
+        };
+        this.bySoccer = async (req, res, next) => {
+            const { startIndex, endIndex } = (0, catalog_1.getSoccerRange)();
+            if (!startIndex || !endIndex || (startIndex > endIndex)) {
+                await this.sendAvatar(res, this.get404Avatar(), req.query.ring);
+                return;
+            }
+            const path = this.getImagePath("soccer", startIndex, endIndex);
+            if (path) {
+                await this.sendAvatar(res, path, req.query.ring);
+            }
+        };
+        this.bySoccerId = async (req, res, next) => {
+            const idAvatar = parseInt(req.params.id);
+            const { startIndex, endIndex } = (0, catalog_1.getSoccerRange)();
+            if (!startIndex || !endIndex || !idAvatar || (startIndex > endIndex)) {
+                await this.sendAvatar(res, this.get404Avatar(), req.query.ring);
+                return;
+            }
+            if ((startIndex > idAvatar) || (idAvatar > endIndex)) {
+                await this.sendAvatar(res, this.get404Avatar(), req.query.ring);
+                return;
+            }
+            const imageName = this.publicNameAvatar + idAvatar + this.foramtFile;
+            const path = `${process.env.UPLOAD_DIR}/soccer/${imageName}`;
+            if (path) {
+                await this.sendAvatar(res, path, req.query.ring);
             }
         };
         //job avatrs
         this.jobsList = process.env.JOBS_LIST ? process.env.JOBS_LIST.split(',') : [];
-        this.byJob = (req, res, next) => {
+        this.byJob = async (req, res, next) => {
             const job = req.params.job;
             const gender = req.params.gender;
             if (!this.jobsList.includes(job) || !['male', 'female'].includes(gender)) {
-                res.
-                    status(200).
-                    sendFile(this.get404Avatar(), { root: '.' });
+                await this.sendAvatar(res, this.get404Avatar(), req.query.ring);
                 return;
             }
             const path = `${process.env.UPLOAD_DIR}/job/${job}/${gender}${this.foramtFile}`;
-            res.
-                status(200).
-                sendFile(path, { root: '.' });
+            await this.sendAvatar(res, path, req.query.ring);
         };
         //username
         this.checkValidColor = (color) => {
@@ -185,6 +201,7 @@ class publicController {
             const uppercase = req.query.uppercase ? (req.query.uppercase == "false" ? false : true) : true;
             const bold = req.query.bold ? (req.query.bold == "false" ? false : true) : true;
             const length = req.query.length ? (Number(req.query.length) > 2 ? 2 : Number(req.query.length)) : 2;
+            const ring = (0, composite_1.resolveRing)(req.query.ring);
             //Username
             if (req.query.username) {
                 console.log("Username: ", req.query.username);
@@ -213,6 +230,10 @@ class publicController {
             if (req.query.format) {
                 format = ['png', 'jpg'].includes(req.query.format.toString()) ? req.query.format.toString() : 'png';
             }
+            // When a ring is applied, output is always PNG
+            if (ring) {
+                format = 'png';
+            }
             //Uppercase
             if (uppercase) {
                 username.forEach((item, index) => {
@@ -239,6 +260,7 @@ class publicController {
             </svg>
         `;
             // Convert SVG to Format
+            const svg2img = require('svg2img');
             svg2img(svgContent, {
                 format,
                 resvg: {
@@ -247,14 +269,26 @@ class publicController {
                         loadSystemFonts: false,
                     },
                 }
-            }, (error, buffer) => {
+            }, async (error, buffer) => {
                 if (error) {
                     res.status(500)
                         .sendFile(this.get404Avatar(), { root: '.' });
                 }
                 else {
-                    res.set('Content-Type', `image/${format}`);
-                    res.send(buffer);
+                    try {
+                        if (ring) {
+                            const ringed = await (0, composite_1.applyRing)(buffer, ring, size);
+                            res.set('Content-Type', 'image/png');
+                            res.send(ringed);
+                            return;
+                        }
+                        res.set('Content-Type', `image/${format}`);
+                        res.send(buffer);
+                    }
+                    catch (err) {
+                        res.set('Content-Type', `image/${format}`);
+                        res.send(buffer);
+                    }
                 }
             });
         };

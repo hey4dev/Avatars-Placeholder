@@ -1,4 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
+import { listRings } from '../../../rings/catalog';
+import { listSoccerPlayers } from '../../../soccer/catalog';
 
 class postController{
 
@@ -54,6 +56,21 @@ class postController{
             jobsList
         });
 
+    }
+
+    getSoccer = (req: Request, res: Response, next: NextFunction) => {
+        res.
+        status(200).
+        json({
+            players: listSoccerPlayers()
+        });
+
+    }
+
+    getRings = (req: Request, res: Response, next: NextFunction) => {
+        res.status(200).json({
+            rings: listRings()
+        });
     }
 
 }

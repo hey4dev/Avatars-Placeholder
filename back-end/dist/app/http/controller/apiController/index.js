@@ -1,5 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const catalog_1 = require("../../../rings/catalog");
+const catalog_2 = require("../../../soccer/catalog");
 class postController {
     constructor() {
         this.publicNameAvatar = process.env.AVATAR_PUBLIC_NAME ? process.env.AVATAR_PUBLIC_NAME : "";
@@ -40,6 +42,18 @@ class postController {
                 status(200).
                 json({
                 jobsList
+            });
+        };
+        this.getSoccer = (req, res, next) => {
+            res.
+                status(200).
+                json({
+                players: (0, catalog_2.listSoccerPlayers)()
+            });
+        };
+        this.getRings = (req, res, next) => {
+            res.status(200).json({
+                rings: (0, catalog_1.listRings)()
             });
         };
     }

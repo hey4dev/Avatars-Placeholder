@@ -17,6 +17,9 @@ router.get("/boy", publicController_1.default.byGenderBoy);
 router.get("/girl", publicController_1.default.byGenderGirl);
 //By Job
 router.get("/job/:job/:gender", publicController_1.default.byJob);
+//Soccer (must be before /:id)
+router.get("/soccer", publicController_1.default.bySoccer);
+router.get("/soccer/:id", publicController_1.default.bySoccerId);
 //By id
 router.get("/:id", publicController_1.default.byId);
 exports.default = router;

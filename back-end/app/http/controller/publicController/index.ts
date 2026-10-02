@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-const svg2img = require('svg2img');
+import { applyRing, applyRingToFile, resolveRing } from '../../../rings/composite';
+import { getSoccerRange } from '../../../soccer/catalog';
 
 class publicController{
 
@@ -36,16 +37,31 @@ class publicController{
         return path;
     }
 
-    index = (req: Request, res: Response, next: NextFunction) => {
+    sendAvatar = async (res: Response, filePath: string, ringQuery: unknown) => {
+        const ring = resolveRing(ringQuery);
+        if(!ring){
+            res.status(200).sendFile(filePath, {root: '.'});
+            return;
+        }
+
+        try{
+            const buffer = await applyRingToFile(filePath, ring);
+            res.set('Content-Type', 'image/png');
+            res.status(200).send(buffer);
+        }catch(err){
+            console.error("Ring composite failed:", err);
+            res.status(200).sendFile(filePath, {root: '.'});
+        }
+    }
+
+    index = async (req: Request, res: Response, next: NextFunction) => {
 
         try{
             const startIndex: number = process.env.IMG_START_INDEX ? parseInt(process.env.IMG_START_INDEX ) : 0;
             const endIndex: number = process.env.IMG_END_INDEX ? parseInt(process.env.IMG_END_INDEX ) : 0;
 
             if(!startIndex || !endIndex || (startIndex > endIndex)){
-                res.
-                status(200).
-                sendFile(this.get404Avatar(), {root: '.'});
+                await this.sendAvatar(res, this.get404Avatar(), req.query.ring);
                 return;
             }
 
@@ -59,22 +75,17 @@ class publicController{
                 path = this.getImagePath("id", startIndex, endIndex);
             }
 
-            //console.log(path)
             if(path){
-                res.
-                status(200).
-                sendFile(path, {root: '.'});
+                await this.sendAvatar(res, path, req.query.ring);
             }
 
         }catch(err){
-            res.
-            status(200).
-            sendFile(this.get404Avatar(), {root: '.'});
+            await this.sendAvatar(res, this.get404Avatar(), req.query.ring);
         }
 
     }
 
-    byId = (req: Request, res: Response, next: NextFunction) => {
+    byId = async (req: Request, res: Response, next: NextFunction) => {
 
         const idAvatar:number = parseInt(req.params.id);
 
@@ -82,42 +93,31 @@ class publicController{
         const endIndex: number = process.env.IMG_END_INDEX ? parseInt(process.env.IMG_END_INDEX ) : 0;
      
         if(!startIndex || !endIndex || !idAvatar || (startIndex > endIndex)){
-            res.
-            status(200).
-            sendFile(this.get404Avatar(), {root: '.'});
-            
+            await this.sendAvatar(res, this.get404Avatar(), req.query.ring);
             return;
         }
 
         if( (startIndex > idAvatar) || (idAvatar > endIndex)){
-            //console.log(this)
-            res.
-            status(200).
-            sendFile(this.get404Avatar(), {root: '.'});
+            await this.sendAvatar(res, this.get404Avatar(), req.query.ring);
             return;
         }
         
         const imageName: string = this.publicNameAvatar + idAvatar + this.foramtFile;
         const path: string = `${process.env.UPLOAD_DIR}/id/${imageName}`;
-        //console.log(path)
         
         if(path){
-            res.
-            status(200).
-            sendFile(path, {root: '.'});
+            await this.sendAvatar(res, path, req.query.ring);
         }
 
     }
 
-    byGenderBoy = (req: Request, res: Response, next: NextFunction)=> {
+    byGenderBoy = async (req: Request, res: Response, next: NextFunction)=> {
         
         const startIndex: number = process.env.IMG_BOY_START_INDEX ? parseInt(process.env.IMG_BOY_START_INDEX) : 0;
         const endIndex: number = process.env.IMG_BOY_END_INDEX ? parseInt(process.env.IMG_BOY_END_INDEX) : 0;
     
         if(!startIndex || !endIndex || (startIndex > endIndex)){
-            res.
-            status(200).
-            sendFile(this.get404Avatar(), {root: '.'});
+            await this.sendAvatar(res, this.get404Avatar(), req.query.ring);
             return;
         }
         
@@ -128,24 +128,19 @@ class publicController{
             path = this.getImagePath("boy", startIndex, endIndex);
         }
 
-        //console.log(path)
         if(path){
-            res.
-            status(200).
-            sendFile(path, {root: '.'});
+            await this.sendAvatar(res, path, req.query.ring);
         }
         
     }
 
-    byGenderGirl = (req: Request, res: Response, next: NextFunction) => {
+    byGenderGirl = async (req: Request, res: Response, next: NextFunction) => {
         
         const startIndex: number = process.env.IMG_GIRL_START_INDEX ? parseInt(process.env.IMG_GIRL_START_INDEX) : 0;
         const endIndex: number = process.env.IMG_GIRL_END_INDEX ? parseInt(process.env.IMG_GIRL_END_INDEX) : 0;
         
         if(!startIndex || !endIndex || (startIndex > endIndex)){
-            res.
-            status(200).
-            sendFile(this.get404Avatar(), {root: '.'});
+            await this.sendAvatar(res, this.get404Avatar(), req.query.ring);
             return;
         }
         
@@ -156,11 +151,49 @@ class publicController{
             path = this.getImagePath("girl", startIndex, endIndex);
         }
 
-        //console.log(path)
         if(path){
-            res.
-            status(200).
-            sendFile(path, {root: '.'});
+            await this.sendAvatar(res, path, req.query.ring);
+        }
+
+    }
+
+    bySoccer = async (req: Request, res: Response, next: NextFunction) => {
+
+        const { startIndex, endIndex } = getSoccerRange();
+
+        if(!startIndex || !endIndex || (startIndex > endIndex)){
+            await this.sendAvatar(res, this.get404Avatar(), req.query.ring);
+            return;
+        }
+
+        const path = this.getImagePath("soccer", startIndex, endIndex);
+
+        if(path){
+            await this.sendAvatar(res, path, req.query.ring);
+        }
+
+    }
+
+    bySoccerId = async (req: Request, res: Response, next: NextFunction) => {
+
+        const idAvatar: number = parseInt(req.params.id);
+        const { startIndex, endIndex } = getSoccerRange();
+
+        if(!startIndex || !endIndex || !idAvatar || (startIndex > endIndex)){
+            await this.sendAvatar(res, this.get404Avatar(), req.query.ring);
+            return;
+        }
+
+        if((startIndex > idAvatar) || (idAvatar > endIndex)){
+            await this.sendAvatar(res, this.get404Avatar(), req.query.ring);
+            return;
+        }
+
+        const imageName: string = this.publicNameAvatar + idAvatar + this.foramtFile;
+        const path: string = `${process.env.UPLOAD_DIR}/soccer/${imageName}`;
+
+        if(path){
+            await this.sendAvatar(res, path, req.query.ring);
         }
 
     }
@@ -168,23 +201,19 @@ class publicController{
     //job avatrs
     jobsList: string[] = process.env.JOBS_LIST ? process.env.JOBS_LIST.split(',') : [];
 
-    byJob = (req: Request, res: Response, next: NextFunction) => {
+    byJob = async (req: Request, res: Response, next: NextFunction) => {
         
         const job : string = req.params.job;
         const gender: string = req.params.gender;
 
         if(!this.jobsList.includes(job) || !['male', 'female'].includes(gender)){
-            res.
-            status(200).
-            sendFile(this.get404Avatar(), {root: '.'});
+            await this.sendAvatar(res, this.get404Avatar(), req.query.ring);
             return;
         }
 
         const path: string = `${process.env.UPLOAD_DIR}/job/${job}/${gender}${this.foramtFile}`;
 
-        res.
-        status(200).
-        sendFile(path, {root: '.'});
+        await this.sendAvatar(res, path, req.query.ring);
         
     }
 
@@ -227,6 +256,7 @@ class publicController{
         const uppercase: boolean = req.query.uppercase ? ( req.query.uppercase == "false" ? false : true ) : true;
         const bold: boolean = req.query.bold ? ( req.query.bold == "false" ? false : true ) : true;
         const length: number = req.query.length ? (Number(req.query.length) > 2 ? 2 : Number(req.query.length) ) : 2;
+        const ring = resolveRing(req.query.ring);
         
         //Username
         if(req.query.username){
@@ -260,6 +290,11 @@ class publicController{
         if(req.query.format){
             format = ['png', 'jpg'].includes(req.query.format.toString()) ? req.query.format.toString() : 'png';
         }
+
+        // When a ring is applied, output is always PNG
+        if(ring){
+            format = 'png';
+        }
         
         //Uppercase
         if(uppercase){
@@ -289,6 +324,7 @@ class publicController{
         `;
 
         // Convert SVG to Format
+        const svg2img = require('svg2img');
         svg2img(svgContent, 
             {
                 format,
@@ -299,13 +335,24 @@ class publicController{
                     },
                 }
 
-            }, (error: Error, buffer: Buffer)=> {
+            }, async (error: Error, buffer: Buffer)=> {
                 if (error) {
                     res.status(500)
                     .sendFile(this.get404Avatar(), {root: '.'});
                 } else {
-                    res.set('Content-Type', `image/${format}`);
-                    res.send(buffer);
+                    try{
+                        if(ring){
+                            const ringed = await applyRing(buffer, ring, size);
+                            res.set('Content-Type', 'image/png');
+                            res.send(ringed);
+                            return;
+                        }
+                        res.set('Content-Type', `image/${format}`);
+                        res.send(buffer);
+                    }catch(err){
+                        res.set('Content-Type', `image/${format}`);
+                        res.send(buffer);
+                    }
                 }
         });
 
@@ -313,4 +360,4 @@ class publicController{
 
 }
 
-export default new publicController(); 
+export default new publicController();

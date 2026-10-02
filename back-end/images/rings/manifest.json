@@ -1,0 +1,52 @@
+{
+  "rings": [
+    {
+      "id": 1,
+      "slug": "bronze",
+      "name": "Bronze Gear",
+      "file": "ring-1.png"
+    },
+    {
+      "id": 2,
+      "slug": "silver",
+      "name": "Silver Crystal",
+      "file": "ring-2.png"
+    },
+    {
+      "id": 3,
+      "slug": "gold",
+      "name": "Gold Wings",
+      "file": "ring-3.png"
+    },
+    {
+      "id": 4,
+      "slug": "fire",
+      "name": "Fire",
+      "file": "ring-4.png"
+    },
+    {
+      "id": 5,
+      "slug": "soccer",
+      "name": "Soccer Neon",
+      "file": "ring-5.png"
+    },
+    {
+      "id": 6,
+      "slug": "soccer-trail",
+      "name": "Soccer Trail",
+      "file": "ring-6.png"
+    },
+    {
+      "id": 7,
+      "slug": "energy",
+      "name": "Energy Orbit",
+      "file": "ring-7.png"
+    },
+    {
+      "id": 8,
+      "slug": "royal",
+      "name": "Royal Crown",
+      "file": "ring-8.png"
+    }
+  ]
+}

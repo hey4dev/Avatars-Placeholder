@@ -10,4 +10,6 @@ const apiController_1 = __importDefault(require("../../http/controller/apiContro
 //Random
 router.get("/", apiController_1.default.index);
 router.get("/jobs", apiController_1.default.getJobs);
+router.get("/soccer", apiController_1.default.getSoccer);
+router.get("/rings", apiController_1.default.getRings);
 exports.default = router;
